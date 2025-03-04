@@ -21,13 +21,11 @@
         <img src="../../src/assets/card-back.png" alt="Front" class="w-full h-full object-cover" />
       </div>
       <div
-        class="absolute size-full inset-0 rounded-lg backface-hidden flex items-center justify-center rotate-y-180 bg-cover bg-center"
         :class="{
-          'bg-[url(../../src/assets/win-joker.png)]':
-            showResult && pickedCard === index && isWinner,
-          'bg-[url(../../src/assets/lose-joker.png)]':
-            showResult && pickedCard === index && !isWinner,
+          'win-card': showResult && pickedCard === index && isWinner,
+          'lose-card': showResult && pickedCard === index && !isWinner,
         }"
+        class="absolute size-full inset-0 rounded-lg backface-hidden flex items-center justify-center rotate-y-180 bg-cover bg-center"
       ></div>
     </div>
   </div>
@@ -166,5 +164,19 @@ const startShuffle = () => {
 .card {
   width: 96px;
   height: 144px;
+}
+
+.win-card {
+  background-image: url("../assets/win-joker.jpg");
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+.lose-card {
+  background-image: url("../assets/lose-joker.jpg");
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
 }
 </style>
