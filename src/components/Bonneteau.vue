@@ -167,14 +167,14 @@ const startShuffle = () => {
 }
 
 .win-card {
-  background-image: url("/assets/win-joker.jpg");
+  background-image: url("/win-joker.jpg");
   background-position: center;
   background-size: cover;
   background-repeat: no-repeat;
 }
 
 .lose-card {
-  background-image: url("/assets/lose-joker.jpg");
+  background-image: url("/lose-joker.jpg");
   background-position: center;
   background-size: cover;
   background-repeat: no-repeat;
