@@ -2,11 +2,7 @@
   <div
     class="relative perspective-1000 h-screen overflow-hidden w-[800px] items-center flex justify-center"
   >
-    <img
-      src="../../src/assets/run-dog-run.gif"
-      alt="Running Dog"
-      class="absolute bottom-8 object-cover h-[50px]"
-    />
+    <img :src="runDogRun" alt="Running Dog" class="absolute bottom-8 object-cover h-[50px]" />
     <div
       v-for="(card, index) in cards"
       :key="card.id"
@@ -18,14 +14,14 @@
       <div
         class="absolute size-full inset-0 rounded-lg backface-hidden flex items-center justify-center bg-gray-300"
       >
-        <img src="../../src/assets/card-back.png" alt="Front" class="w-full h-full object-cover" />
+        <img :src="cardBack" alt="Front" class="w-full h-full object-cover" />
       </div>
       <div
-        :class="{
-          'win-card': showResult && pickedCard === index && isWinner,
-          'lose-card': showResult && pickedCard === index && !isWinner,
-        }"
         class="absolute size-full inset-0 rounded-lg backface-hidden flex items-center justify-center rotate-y-180 bg-cover bg-center"
+        :style="{
+          backgroundImage:
+            showResult && pickedCard === index ? `url(${isWinner ? winJoker : loseJoker})` : '',
+        }"
       ></div>
     </div>
   </div>
@@ -34,6 +30,12 @@
 <script setup>
 import { ref, onMounted } from "vue"
 import confetti from "canvas-confetti"
+
+// Import assets
+import winJoker from "../assets/win-joker.jpg"
+import loseJoker from "../assets/lose-joker.jpg"
+import runDogRun from "../assets/run-dog-run.gif"
+import cardBack from "../assets/card-back.png"
 
 // cards array
 const cards = ref([{ id: 0 }, { id: 1 }, { id: 2 }])
@@ -52,15 +54,12 @@ const isShuffling = ref(false)
 const offsets = [-130, 0, 130]
 
 // creepy sound loop
-const audio = new Audio(new URL("../../src/assets/creepy.mp3", import.meta.url))
+const audio = new Audio(new URL("../assets/creepy.mp3", import.meta.url))
 audio.loop = true
-// Ensure the audio truly loops by restarting it when it ends
 audio.addEventListener("ended", () => {
   audio.currentTime = 0
   audio.play()
 })
-
-// flag to ensure audio starts only once
 const audioStarted = ref(false)
 
 // cards style
@@ -164,19 +163,5 @@ const startShuffle = () => {
 .card {
   width: 96px;
   height: 144px;
-}
-
-.win-card {
-  background-image: url("/win-joker.jpg");
-  background-position: center;
-  background-size: cover;
-  background-repeat: no-repeat;
-}
-
-.lose-card {
-  background-image: url("/lose-joker.jpg");
-  background-position: center;
-  background-size: cover;
-  background-repeat: no-repeat;
 }
 </style>
