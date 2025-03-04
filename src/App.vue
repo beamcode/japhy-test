@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import HelloWorld from "./components/HelloWorld.vue";
+import Bonneteau from "./components/Bonneteau.vue"
 </script>
 
 <template>
-  <HelloWorld />
+  <Bonneteau />
 </template>
-
