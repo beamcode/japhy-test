@@ -37,6 +37,15 @@ import loseJoker from "../assets/lose-joker.jpg"
 import runDogRun from "../assets/run-dog-run.gif"
 import cardBack from "../assets/card-back.png"
 
+// Preload images
+const preloadImages = () => {
+  const images = [winJoker, loseJoker]
+  images.forEach((src) => {
+    const img = new Image()
+    img.src = src
+  })
+}
+
 // cards array
 const cards = ref([{ id: 0 }, { id: 1 }, { id: 2 }])
 const cardRefs = ref([])
@@ -87,6 +96,7 @@ const fetchRandomCard = async () => {
 }
 
 onMounted(() => {
+  preloadImages()
   fetchRandomCard()
 })
 
