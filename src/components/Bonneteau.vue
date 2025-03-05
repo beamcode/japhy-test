@@ -1,28 +1,37 @@
 <template>
   <div
-    class="relative perspective-1000 h-screen overflow-hidden w-screen items-center flex justify-center"
+    v-if="showStartButton"
+    class="flex justify-center items-center h-screen overflow-hidden w-screen mb-30"
+  >
+    <button @click="handleStart" class="px-6 py-3 bg-blue-500 text-white rounded">Play Game</button>
+  </div>
+
+  <div
+    v-else
+    class="relative perspective-1000 h-screen overflow-hidden w-screen flex justify-center items-center"
   >
     <img :src="runDogRun" alt="Running Dog" class="absolute bottom-8 object-cover h-[50px]" />
+
     <div
       v-for="(card, index) in cards"
-      :key="card.id"
-      :ref="(el) => (cardRefs[index] = el)"
-      class="card absolute transition-transform duration-500 flip-3d cursor-pointer"
-      :style="getCardStyle(index)"
-      @click="pickCard(index)"
+      :key="index"
+      class="card"
+      :style="cardStyle(index)"
+      ref="cardRefs"
     >
       <div
-        class="absolute size-full inset-0 rounded-lg backface-hidden flex items-center justify-center bg-gray-300"
+        class="card-inner transition-transform duration-700 ease-out"
+        :class="{ flipped: cardFlipped(index) }"
+        @click="pickCard(index)"
       >
-        <img :src="cardBack" alt="Front" class="w-full h-full object-cover" />
+        <div class="card-face card-front">
+          <img :src="cardBack" class="w-full h-full object-cover" />
+        </div>
+
+        <div class="card-face card-back">
+          <img :src="card.isWinner ? winJoker : loseJoker" class="w-full h-full object-cover" />
+        </div>
       </div>
-      <div
-        class="absolute size-full inset-0 rounded-lg backface-hidden flex items-center justify-center rotate-y-180 bg-cover bg-center"
-        :style="{
-          backgroundImage:
-            showResult && pickedCard === index ? `url(${isWinner ? winJoker : loseJoker})` : '',
-        }"
-      ></div>
     </div>
   </div>
 </template>
@@ -31,95 +40,143 @@
 import { ref, onMounted } from "vue"
 import confetti from "canvas-confetti"
 
-// Import assets
 import winJoker from "../assets/win-joker.jpg"
 import loseJoker from "../assets/lose-joker.jpg"
-import runDogRun from "../assets/run-dog-run.gif"
 import cardBack from "../assets/card-back.png"
+import runDogRun from "../assets/run-dog-run.gif"
 
-// Preload images
-const preloadImages = () => {
-  const images = [winJoker, loseJoker]
-  images.forEach((src) => {
+const showStartButton = ref(true)
+const canPick = ref(false)
+const firstGame = ref(true)
+
+const cards = ref([
+  { id: 0, isWinner: false },
+  { id: 1, isWinner: false },
+  { id: 2, isWinner: false },
+])
+
+const flippedStates = ref([false, false, false])
+
+const positions = ref([
+  { x: 0, y: 0 },
+  { x: 0, y: 0 },
+  { x: 0, y: 0 },
+])
+
+const nextRandom = ref(null)
+
+const audio = new Audio(new URL("../assets/creepy.mp3", import.meta.url))
+audio.loop = true
+
+function preloadImages() {
+  ;[winJoker, loseJoker].forEach((src) => {
     const img = new Image()
     img.src = src
   })
 }
 
-// cards array
-const cards = ref([{ id: 0 }, { id: 1 }, { id: 2 }])
-const cardRefs = ref([])
-
-// states
-const pickedCard = ref(null)
-const correctCard = ref(null)
-const cardFlipped = ref(false)
-const showResult = ref(false)
-const isWinner = ref(false)
-const canPick = ref(true)
-
-// anims
-const isShuffling = ref(false)
-const offsets = [-130, 0, 130]
-
-// creepy sound loop
-const audio = new Audio(new URL("../assets/creepy.mp3", import.meta.url))
-audio.loop = true
-audio.addEventListener("ended", () => {
-  audio.currentTime = 0
-  audio.play()
-})
-const audioStarted = ref(false)
-
-// cards style
-const getCardStyle = (index) => {
-  const flipDeg = cardFlipped.value && pickedCard.value === index ? 180 : 0
-  const offsetX = isShuffling.value ? 0 : offsets[index]
-  return {
-    left: "50%",
-    top: "42%",
-    transform: `translate(-50%, -50%) translateX(${offsetX}px) rotateY(${flipDeg}deg)`,
+function shuffle(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[array[i], array[j]] = [array[j], array[i]]
   }
 }
 
-// api call for the random number
-const nextRandom = ref(null)
-const fetchRandomCard = async () => {
+const wait = (ms) => new Promise((r) => setTimeout(r, ms))
+
+function cardFlipped(index) {
+  return flippedStates.value[index]
+}
+
+function randomTriangle() {
+  const leftX = -80 - Math.random() * 60
+  const rightX = 80 + Math.random() * 60
+  const topY = -40 - Math.random() * 20
+  const bottomY = 40 + Math.random() * 20
+
+  return [
+    { x: leftX, y: bottomY },
+    { x: 0, y: topY },
+    { x: rightX, y: bottomY },
+  ]
+}
+
+function randomScramble() {
+  return Array.from({ length: 3 }, () => ({
+    x: (Math.random() - 0.5) * 300,
+    y: (Math.random() - 0.5) * 120,
+  }))
+}
+
+async function fetchWinner() {
   try {
-    const response = await fetch(
+    const res = await fetch(
       "https://www.random.org/integers/?num=1&min=0&max=2&col=1&base=10&format=plain&rnd=new"
     )
-    nextRandom.value = parseInt(await response.text(), 10)
-  } catch (e) {
+    nextRandom.value = parseInt(await res.text(), 10)
+  } catch {
     nextRandom.value = Math.floor(Math.random() * 3)
   }
 }
 
-onMounted(() => {
-  preloadImages()
-  fetchRandomCard()
-})
+async function shuffleAnimation() {
+  positions.value = randomTriangle()
+  await wait(800)
 
-// card picker
-const pickCard = (index) => {
+  positions.value = randomScramble()
+  await wait(800)
+
+  positions.value = [
+    { x: -130, y: 0 },
+    { x: 0, y: 0 },
+    { x: 130, y: 0 },
+  ]
+  await wait(800)
+}
+
+async function firstGameReveal() {
+  canPick.value = false
+
+  await fetchWinner()
+  cards.value.forEach((c) => (c.isWinner = false))
+  cards.value[nextRandom.value].isWinner = true
+
+  flippedStates.value = [true, true, true]
+  await wait(2000)
+
+  flippedStates.value = [false, false, false]
+  await wait(700)
+
+  shuffle(cards.value)
+  await shuffleAnimation()
+  canPick.value = true
+}
+
+async function newRound() {
+  canPick.value = false
+  flippedStates.value = [false, false, false]
+
+  await fetchWinner()
+  cards.value.forEach((c) => (c.isWinner = false))
+  cards.value[nextRandom.value].isWinner = true
+
+  shuffle(cards.value)
+  await shuffleAnimation()
+  canPick.value = true
+}
+
+function pickCard(index) {
   if (!canPick.value) return
   canPick.value = false
 
-  if (!audioStarted.value) {
-    audio.play()
-    audioStarted.value = true
-  }
+  flippedStates.value = flippedStates.value.map(() => true)
 
-  correctCard.value = nextRandom.value
-  pickedCard.value = index
-  isWinner.value = index === correctCard.value
-  showResult.value = true
-  cardFlipped.value = true
+  if (cards.value[index].isWinner) {
+    const cardEl = document.getElementsByClassName("card")[index]
+    const rect = cardEl.getBoundingClientRect()
 
-  if (isWinner.value) {
-    const rect = cardRefs.value[index].getBoundingClientRect()
     confetti({
-      particleCount: 100,
+      particleCount: 80,
       spread: 70,
       origin: {
         x: (rect.left + rect.width / 2) / window.innerWidth,
@@ -128,35 +185,45 @@ const pickCard = (index) => {
     })
   }
 
-  setTimeout(
-    () => {
-      cardFlipped.value = false
-      setTimeout(() => {
-        resetGame()
-      }, 500)
-    },
-    isWinner.value ? 3000 : 1000
-  )
+  setTimeout(async () => {
+    flippedStates.value = [false, false, false]
+    await wait(700)
+    newRound()
+  }, 1500)
 }
 
-const resetGame = () => {
-  pickedCard.value = null
-  correctCard.value = null
-  showResult.value = false
-  isWinner.value = false
+async function handleStart() {
+  showStartButton.value = false
+  audio.play()
 
-  fetchRandomCard().finally(() => {
-    canPick.value = true
-  })
+  positions.value = [
+    { x: -130, y: 0 },
+    { x: 0, y: 0 },
+    { x: 130, y: 0 },
+  ]
 
-  startShuffle()
+  if (firstGame.value) {
+    firstGame.value = false
+    await firstGameReveal()
+  } else {
+    newRound()
+  }
 }
 
-const startShuffle = () => {
-  isShuffling.value = true
-  setTimeout(() => {
-    isShuffling.value = false
-  }, 1000)
+onMounted(() => {
+  preloadImages()
+})
+
+function cardStyle(index) {
+  const { x, y } = positions.value[index]
+  return {
+    position: "absolute",
+    width: "96px",
+    height: "144px",
+    left: "50%",
+    top: "42%",
+    transform: `translate(-50%, -50%) translateX(${x}px) translateY(${y}px)`,
+  }
 }
 </script>
 
@@ -164,14 +231,39 @@ const startShuffle = () => {
 .perspective-1000 {
   perspective: 1000px;
 }
-.flip-3d {
+
+.card-inner {
+  width: 100%;
+  height: 100%;
   transform-style: preserve-3d;
+  position: relative;
+  cursor: pointer;
 }
-.backface-hidden {
+
+.card-inner.flipped {
+  transform: rotateY(180deg);
+}
+
+.card-face {
+  position: absolute;
+  width: 100%;
+  height: 100%;
   backface-visibility: hidden;
+  border-radius: 6px;
 }
+
+.card-front {
+  transform: rotateY(0deg);
+  z-index: 2;
+}
+
+.card-back {
+  transform: rotateY(180deg);
+}
+
 .card {
-  width: 96px;
-  height: 144px;
+  transition: transform 0.8s ease-in-out;
+  border-radius: 6px;
+  overflow: hidden;
 }
 </style>
