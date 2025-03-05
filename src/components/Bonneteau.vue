@@ -1,6 +1,6 @@
 <template>
   <div
-    class="relative perspective-1000 h-screen overflow-hidden w-[800px] items-center flex justify-center"
+    class="relative perspective-1000 h-screen overflow-hidden w-screen items-center flex justify-center"
   >
     <img :src="runDogRun" alt="Running Dog" class="absolute bottom-8 object-cover h-[50px]" />
     <div
